@@ -48,13 +48,13 @@ public class AddTermPageController {
 		}
 		
 		conceptService.saveConceptReferenceTerm(newReferenceTerm);
-		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources();
+		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources(false);
 		model.addAttribute("sourceList", sourceList);
 	}
 	
 	public void get(UiSessionContext sessionContext, PageModel model) throws Exception {
 		
-		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources();
+		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources(false);
 		model.addAttribute("sourceList", sourceList);
 	}
 	

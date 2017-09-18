@@ -28,7 +28,7 @@ public class BrowseReferenceTermsTablePageController {
 	}
 	
 	public void get(UiSessionContext sessionContext, PageModel model) throws Exception {
-		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources();
+		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources(false);
 		model.addAttribute("sourceList", sourceList);
 		model.addAttribute("sourceId", 0);
 		

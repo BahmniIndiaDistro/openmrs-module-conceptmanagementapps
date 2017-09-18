@@ -48,7 +48,7 @@ public class DownloadSpreadsheetPageController {
 		
 		ConceptService cs = Context.getConceptService();
 		
-		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources();
+		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources(false);
 		List<ConceptClass> classList = Context.getConceptService().getAllConceptClasses();
 		List<ConceptMapType> mapTypeList = Context.getConceptService().getActiveConceptMapTypes();
 		model.addAttribute("sourceList", sourceList);
@@ -78,7 +78,7 @@ public class DownloadSpreadsheetPageController {
 	}
 	
 	public void get(UiSessionContext sessionContext, PageModel model, HttpServletResponse response) throws Exception {
-		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources();
+		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources(false);
 		List<ConceptClass> classList = Context.getConceptService().getAllConceptClasses();
 		List<ConceptMapType> mapTypeList = Context.getConceptService().getActiveConceptMapTypes();
 		model.addAttribute("sourceList", sourceList);

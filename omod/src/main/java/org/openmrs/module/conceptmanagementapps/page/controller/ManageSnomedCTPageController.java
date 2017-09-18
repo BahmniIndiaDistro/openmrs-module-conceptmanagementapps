@@ -13,6 +13,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.ConceptSource;
 import org.openmrs.api.APIException;
+import org.openmrs.api.AdministrationService;
 import org.openmrs.api.ConceptService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.appui.UiSessionContext;
@@ -88,13 +89,17 @@ public class ManageSnomedCTPageController {
 			
 		}
 		
-		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources();
+		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources(false);
 		int sourceId = 0;
 		
-		ConceptManagementAppsProperties cmap = new ConceptManagementAppsProperties();
-		String snomedSourceUuid = cmap
-		        .getSnomedCTConceptSourceUuidGlobalProperty(ConceptManagementAppsConstants.SNOMED_CT_CONCEPT_SOURCE_UUID_GP);
-		for (ConceptSource source : sourceList) {
+//		ConceptManagementAppsProperties cmap = new ConceptManagementAppsProperties();
+//		String snomedSourceUuid = cmap
+//		        .getSnomedCTConceptSourceUuidGlobalProperty(ConceptManagementAppsConstants.SNOMED_CT_CONCEPT_SOURCE_UUID_GP);
+
+        AdministrationService as = Context.getAdministrationService();
+        String snomedSourceUuid = as.getGlobalProperty(ConceptManagementAppsConstants.SNOMED_CT_CONCEPT_SOURCE_UUID_GP);
+
+        for (ConceptSource source : sourceList) {
 			
 			if (StringUtils.equals(source.getUuid(), snomedSourceUuid)) {
 				sourceId = source.getId();
@@ -118,12 +123,16 @@ public class ManageSnomedCTPageController {
 		
 		String snomedFileDirectoryLocation = "";
 		
-		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources();
+		List<ConceptSource> sourceList = Context.getConceptService().getAllConceptSources(false);
 		int sourceId = 0;
 		
-		ConceptManagementAppsProperties cmap = new ConceptManagementAppsProperties();
-		String snomedSourceUuid = cmap
-		        .getSnomedCTConceptSourceUuidGlobalProperty(ConceptManagementAppsConstants.SNOMED_CT_CONCEPT_SOURCE_UUID_GP);
+//		ConceptManagementAppsProperties cmap = new ConceptManagementAppsProperties();
+//		String snomedSourceUuid = cmap
+//		        .getSnomedCTConceptSourceUuidGlobalProperty(ConceptManagementAppsConstants.SNOMED_CT_CONCEPT_SOURCE_UUID_GP);
+
+        AdministrationService as = Context.getAdministrationService();
+        String snomedSourceUuid = as.getGlobalProperty(ConceptManagementAppsConstants.SNOMED_CT_CONCEPT_SOURCE_UUID_GP);
+
 		for (ConceptSource source : sourceList) {
 			
 			if (StringUtils.equals(source.getUuid(), snomedSourceUuid)) {

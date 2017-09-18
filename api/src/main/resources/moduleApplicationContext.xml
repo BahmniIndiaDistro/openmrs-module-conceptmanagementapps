@@ -31,7 +31,7 @@
 						<ref bean="transactionManager" />
 					</property>
 					<property name="target">
-						<bean class="${project.parent.groupId}.${project.parent.artifactId}.api.impl.ConceptManagementAppsServiceImpl">
+						<bean class="${project.parent.groupId}.${project.parent.artifactId}.api.impl.BahmniConceptManagementAppsServiceImpl">
 							<property name="dao">
 								<bean class="${project.parent.groupId}.${project.parent.artifactId}.api.db.hibernate.HibernateConceptManagementAppsDAO">
 									<property name="sessionFactory">

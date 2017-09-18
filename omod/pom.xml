@@ -72,6 +72,12 @@
 			<version>${uiframeworkVersion}</version>
 		</dependency>
 
+        <dependency>
+            <groupId>org.openmrs.module</groupId>
+            <artifactId>metadatamapping-api</artifactId>
+            <version>${metadatamappingVersion}</version>
+        </dependency>
+
 		<dependency>
 			<groupId>org.openmrs.module</groupId>
 			<artifactId>appui-omod</artifactId>
@@ -154,12 +160,6 @@
 			</resource>
 		</resources>
 
-		<testResources>
-			<testResource>
-				<directory>src/test/resources</directory>
-				<filtering>true</filtering>
-			</testResource>
-		</testResources>
 
 		<pluginManagement>
 			<plugins>
