@@ -84,7 +84,13 @@ public interface ConceptManagementAppsService extends OpenmrsService {
 	 */
 	@Transactional
 	public FileDownload uploadSpreadsheet(MultipartFile spreadsheetFile) throws APIException;
-	
+
+
+
+    @Transactional
+    public void startManageSnomedCTProcess(String process, String dirPath, ConceptSource snomedSource, String conceptCode, int conceptClassId) throws APIException,
+            FileNotFoundException;
+
 	/**
 	 * Starts a method to either add names, ancestors or relationships to concept reference terms
 	 * 
@@ -96,7 +102,8 @@ public interface ConceptManagementAppsService extends OpenmrsService {
 	@Transactional
 	public void startManageSnomedCTProcess(String process, String dirPath, ConceptSource snomedSource) throws APIException,
 	    FileNotFoundException;
-	
+
+
 	/**
 	 * Gets the concept reference terms for a source if given (otherwise all) from a starting point
 	 * if given (otherwise from 0) returning specified number if given (otherwise 1000) ordered

@@ -414,7 +414,12 @@ public class ConceptManagementAppsServiceImpl extends BaseOpenmrsService impleme
 
 	}
 
-	/**
+    @Override
+    public void startManageSnomedCTProcess(String process, String dirPath, ConceptSource snomedSource, String conceptCode, int conceptClassId) throws APIException, FileNotFoundException {
+            startManageSnomedCTProcess(process, dirPath, snomedSource);
+    }
+
+    /**
 	 * @see org.openmrs.module.conceptmanagementapps.api.ConceptManagementAppsService#startManageSnomedCTProcess(java.lang.String,
 	 *      java.lang.String, org.openmrs.ConceptSource)
 	 */
@@ -703,7 +708,7 @@ public class ConceptManagementAppsServiceImpl extends BaseOpenmrsService impleme
 	 * @param snomedSourceUuid
 	 * @throws APIException
 	 */
-	private void addNamesToSnomedCTTerms(String snomedFileDirectory, String snomedSourceUuid) throws APIException {
+    void addNamesToSnomedCTTerms(String snomedFileDirectory, String snomedSourceUuid) throws APIException {
 
 		ConceptService cs = Context.getConceptService();
 

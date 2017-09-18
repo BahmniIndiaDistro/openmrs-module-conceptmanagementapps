@@ -54,7 +54,7 @@ import java.util.Locale;
 /**
  * It is a default implementation of {@link ConceptManagementAppsService}.
  */
-public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAppsServiceImpl {
+public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementAppsServiceImpl {
     protected Log log = LogFactory.getLog(getClass());
     private static String FULLY_SPECIFIED_TYPE = "900000000000003001";
     private static String CONCEPT_SOURCE = "SNOMED CT";
@@ -63,19 +63,14 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
 
     @Override
     @Transactional
-    public void startManageSnomedCTProcess(String process, String snomedFileDirectory, ConceptSource snomedSource) throws APIException, FileNotFoundException {
+    public void startManageSnomedCTProcess(String process, String snomedFileDirectory, ConceptSource snomedSource, String conceptCode, int conceptClassId) throws APIException, FileNotFoundException {
         try {
             snomedIndexFileDirectoryLocation = OpenmrsUtil.getApplicationDataDirectory() + "/tempLucene";
             currentSnomedCTProcess = new ManageSnomedCTProcess(process);
             currentSnomedCTProcess.setCurrentManageSnomedCTProcessDirectoryLocation(snomedFileDirectory);
+            snomedSource = Context.getConceptService().getConceptSourceByName("SNOMED CT");
             indexSnomedFiles(snomedFileDirectory);
-            if (process.contains("addSnomedCTNames")) {
-                importSnomedCTConcepts("412199006", false);
-            } else if (process.contains("addSnomedCTAncestors")) {
-                importSnomedCTConcepts("42752001", true);
-            } else if (process.contains("addSnomedCTRelationships")) {
-                addRelationshipsToReferenceTerms();
-            }
+            importContent(process, snomedFileDirectory, snomedSource, conceptCode, conceptClassId);
         } finally {
             try {
                 FileUtils.cleanDirectory(new File(snomedIndexFileDirectoryLocation));
@@ -84,6 +79,18 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
             }
         }
 
+    }
+
+    private void importContent(String process, String snomedFileDirectory, ConceptSource snomedSource, String conceptCode, int conceptClassId) {
+        if (process.contains("addSnomedCTConcepts")) {
+            importSnomedCTConcepts(conceptCode, false, conceptClassId);
+        } else if (process.contains("addSnomedCTAttributes")) {
+            importSnomedCTConcepts(conceptCode, true, conceptClassId);
+        } else if (process.contains("addSnomedCTRelationships")) {
+            addRelationshipsToReferenceTerms();
+        } else if (process.contains("addSnomedCTNames")) {
+            addNamesToSnomedCTTerms(snomedFileDirectory, snomedSource.getUuid());
+        }
     }
 
     private void saveMappingType(Document currentTermDoc) throws APIException {
@@ -111,7 +118,7 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
                     snomedSource, 0, -1, "code", 1);
             for (ConceptReferenceTerm conceptReferenceTerm : sourceRefTermsNew) {
                 TopScoreDocCollector sourceIdCollector = TopScoreDocCollector.create(1000, true);
-                    Query sourceIdQuery = new QueryParser(CHILD_TERM, analyzer).parse(conceptReferenceTerm.getCode());
+                Query sourceIdQuery = new QueryParser(CHILD_TERM, analyzer).parse(conceptReferenceTerm.getCode());
                 searcher.search(sourceIdQuery, sourceIdCollector);
                 ScoreDoc[] hits = sourceIdCollector.topDocs().scoreDocs;
                 addReferenceTermMaps(cs, snomedSource, searcher, conceptReferenceTerm, hits);
@@ -137,7 +144,7 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
                 Document currentDoc = searcher.doc(hit.doc);
                 ConceptReferenceTerm conceptReferenceTermB = cs.getConceptReferenceTermByCode(currentDoc.get(PARENT_TERM), snomedSource);
 
-                if(conceptReferenceTermB != null) {
+                if (conceptReferenceTermB != null) {
                     ConceptReferenceTerm relationshipTerm = cs.getConceptReferenceTermByCode(currentDoc.get(RELATIONSHIP_ID), snomedSource);
                     ConceptMapType conceptMapType = relationshipTerm == null ? null : cs.getConceptMapTypeByName(relationshipTerm.getName());
                     if (conceptMapType != null) {
@@ -167,19 +174,19 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
         return false;
     }
 
-    private void importSnomedCTConcepts(String conceptCode, Boolean isAttribute) {
+    private void importSnomedCTConcepts(String conceptCode, Boolean isAttribute, int conceptClassId) {
         try {
             IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(snomedIndexFileDirectoryLocation)));
             IndexSearcher searcher = new IndexSearcher(reader);
             ArrayList<String> parentConcepts = new ArrayList<String>();
-            saveSnomedCTConcept(conceptCode, null, searcher, false, isAttribute);
-            saveChildConcepts(conceptCode, searcher, parentConcepts, isAttribute);
+            saveSnomedCTConcept(conceptCode, null, searcher, false, isAttribute, conceptClassId);
+            saveChildConcepts(conceptCode, searcher, parentConcepts, isAttribute, conceptClassId);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void saveChildConcepts(String conceptCode, IndexSearcher searcher, ArrayList<String> parentConcepts, Boolean isAttribute) {
+    private void saveChildConcepts(String conceptCode, IndexSearcher searcher, ArrayList<String> parentConcepts, Boolean isAttribute, int conceptClassId) {
         try {
             TopScoreDocCollector sourceIdCollectorOne = TopScoreDocCollector.create(1000, true);
             Query sourceIdQuery = new QueryParser(PARENT_TERM, analyzer).parse(conceptCode);
@@ -197,11 +204,9 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
                         String childIdString = d.get(CHILD_TERM);
                         parentConcepts.add(conceptCode);
                         if (!parentConcepts.contains(childIdString)) {
-                            saveSnomedCTConcept(childIdString, conceptCode, searcher, true, isAttribute);
+                            saveSnomedCTConcept(childIdString, conceptCode, searcher, true, isAttribute, conceptClassId);
                             log.warn(childIdString);
-                            saveChildConcepts(childIdString, searcher, parentConcepts, isAttribute);
-                        } else {
-                            return;
+                            saveChildConcepts(childIdString, searcher, parentConcepts, isAttribute, conceptClassId);
                         }
                     }
                 }
@@ -211,7 +216,7 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
         }
     }
 
-    private void saveSnomedCTConcept(String conceptCode, String parentConceptCode, IndexSearcher searcher, Boolean isMember, Boolean isAttribute) throws APIException {
+    private void saveSnomedCTConcept(String conceptCode, String parentConceptCode, IndexSearcher searcher, Boolean isMember, Boolean isAttribute, int conceptClassId) throws APIException {
 
         if (!getManageSnomedCTProcessCancelled()) {
             try {
@@ -231,7 +236,7 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
                                 if (isAttribute) {
                                     saveMappingType(currentTermDoc);
                                 } else {
-                                    saveConcept(conceptCode, parentConceptCode, isMember, currentTermDoc);
+                                    saveConcept(conceptCode, parentConceptCode, isMember, currentTermDoc, conceptClassId);
                                 }
                             }
                         }
@@ -246,7 +251,7 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
         }
     }
 
-    private void saveConcept(String conceptCode, String parentConceptCode, Boolean isChildConcept, Document currentTermDoc) {
+    private void saveConcept(String conceptCode, String parentConceptCode, Boolean isChildConcept, Document currentTermDoc, int conceptClassId) {
         ConceptSource conceptSource = Context.getConceptService().getConceptSourceByName(CONCEPT_SOURCE);
         ConceptMapType conceptMapType = Context.getConceptService().getConceptMapTypeByName(CONCEPT_SOURCE_TYPE);
         Concept concept = Context.getConceptService().getConceptByName(currentTermDoc.get(TERM_NAME));
@@ -254,7 +259,7 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
         Concept mappedConcept = getMappedConcept(conceptMapType, mappedConcepts);
 
         if (concept == null && mappedConcept == null) {
-            concept = createConcept(conceptCode, currentTermDoc, conceptSource, conceptMapType);
+            concept = createConcept(conceptCode, currentTermDoc, conceptSource, conceptMapType, conceptClassId);
             log.info("Created concept" + currentTermDoc.get(TERM_NAME));
         }
         concept = getConcept(concept, mappedConcept);
@@ -273,7 +278,7 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
         return concept != null ? concept : mappedConcept;
     }
 
-    private Concept createConcept(String conceptCode, Document currentTermDoc, ConceptSource conceptSource, ConceptMapType conceptMapType) {
+    private Concept createConcept(String conceptCode, Document currentTermDoc, ConceptSource conceptSource, ConceptMapType conceptMapType, int conceptClassId) {
         Concept concept = new Concept();
         ConceptName conceptName = new ConceptName();
         conceptName.setName(currentTermDoc.get(TERM_NAME));
@@ -284,7 +289,7 @@ public class BahmniConceptManagementAppsServiceImpl extends  ConceptManagementAp
         conceptDatatype.setConceptDatatypeId(4);
         concept.setDatatype(conceptDatatype);
         ConceptClass conceptClass = new ConceptClass();
-        conceptClass.setConceptClassId(4);
+        conceptClass.setConceptClassId(conceptClassId);
         concept.setConceptClass(conceptClass);
 
         ConceptReferenceTerm conceptReferenceTerm = saveConceptReferenceTerm(conceptCode, currentTermDoc, conceptSource);
