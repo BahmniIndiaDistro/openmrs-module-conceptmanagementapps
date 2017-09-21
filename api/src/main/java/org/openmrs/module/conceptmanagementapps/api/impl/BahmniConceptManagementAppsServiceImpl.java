@@ -17,6 +17,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.RollingFileAppender;
+import org.apache.log4j.SimpleLayout;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -60,17 +64,20 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
     private static String CONCEPT_SOURCE = "SNOMED CT";
     private static String CONCEPT_SOURCE_TYPE = "SAME-AS";
     private static String SNOMED_DESCRIPTION_ATTRIBUTE = "SNOMED CT ATTRIBUTE";
+    private static final Logger logger = Logger.getLogger(BahmniConceptManagementAppsServiceImpl.class);
 
     @Override
     @Transactional
     public void startManageSnomedCTProcess(String process, String snomedFileDirectory, ConceptSource snomedSource, String conceptCode, int conceptClassId) throws APIException, FileNotFoundException {
         try {
+            initLogging();
             snomedIndexFileDirectoryLocation = OpenmrsUtil.getApplicationDataDirectory() + "/tempLucene";
             currentSnomedCTProcess = new ManageSnomedCTProcess(process);
             currentSnomedCTProcess.setCurrentManageSnomedCTProcessDirectoryLocation(snomedFileDirectory);
             snomedSource = Context.getConceptService().getConceptSourceByName("SNOMED CT");
             indexSnomedFiles(snomedFileDirectory);
             importContent(process, snomedFileDirectory, snomedSource, conceptCode, conceptClassId);
+            Logger.getLogger(BahmniConceptManagementAppsServiceImpl.class).getLoggerRepository().resetConfiguration();
         } finally {
             try {
                 FileUtils.cleanDirectory(new File(snomedIndexFileDirectoryLocation));
@@ -100,7 +107,7 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
             conceptMapType.setIsHidden(false);
             conceptMapType.setDescription(SNOMED_DESCRIPTION_ATTRIBUTE);
             Context.getConceptService().saveConceptMapType(conceptMapType);
-            log.info("Created concept Map Type" + currentTermDoc.get(TERM_NAME));
+            logger.info("Created concept Map Type " + currentTermDoc.get(TERM_NAME));
         }
         ConceptSource conceptSource = Context.getConceptService().getConceptSourceByName(CONCEPT_SOURCE);
         saveConceptReferenceTerm(currentTermDoc.get(TERM_ID), currentTermDoc, conceptSource);
@@ -205,7 +212,6 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
                         parentConcepts.add(conceptCode);
                         if (!parentConcepts.contains(childIdString)) {
                             saveSnomedCTConcept(childIdString, conceptCode, searcher, true, isAttribute, conceptClassId);
-                            log.warn(childIdString);
                             saveChildConcepts(childIdString, searcher, parentConcepts, isAttribute, conceptClassId);
                         }
                     }
@@ -260,7 +266,7 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
 
         if (concept == null && mappedConcept == null) {
             concept = createConcept(conceptCode, currentTermDoc, conceptSource, conceptMapType, conceptClassId);
-            log.info("Created concept" + currentTermDoc.get(TERM_NAME));
+            logger.info("Created concept " + currentTermDoc.get(TERM_NAME) + "(" + currentTermDoc.get(TERM_ID) + ")");
         }
         concept = getConcept(concept, mappedConcept);
         if (isChildConcept && concept != null) {
@@ -269,7 +275,7 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
                 parentConcept.setSet(true);
                 parentConcept.addSetMember(concept);
                 Context.getConceptService().saveConcept(parentConcept);
-                log.info("Added" + currentTermDoc.get(TERM_NAME) + "as child to" + parentConcept.getName());
+                logger.info("Added " + currentTermDoc.get(TERM_NAME) + " as child to " + parentConcept.getName());
             }
         }
     }
@@ -327,4 +333,16 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
         return conceptReferenceTerm;
     }
 
+    private static void initLogging() {
+        try {
+            RollingFileAppender appender = new RollingFileAppender(new SimpleLayout(),"/var/log/openmrs/snomedConcepts.log",true);
+            appender.setMaxFileSize("20MB");
+            logger.addAppender(appender);
+
+            logger.setAdditivity(false);
+            logger.setLevel((Level) Level.DEBUG);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
