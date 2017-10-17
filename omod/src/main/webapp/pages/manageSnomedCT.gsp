@@ -139,15 +139,17 @@ ${ui.message("conceptmanagementapps.managesnomedct.instructions")}
                             initialValue: 0
                     ]
                     )}
+                <p>or Enter path to file having list of concepts</p>
+                <input  type="text" name="snomedConceptsFilePath" id="snomedConceptsFileLocationId" size="35" placeholder="Enter File path"/>
 
                 <p id="showHideAddConcept" style="display: inline-block">
                     <input type="button" name="addSnomedCTConcepts" id="addSnomedCTConceptId" value="Start Task" onclick="javascript:validateForm(this);"/>
                 </p>
 
                 <p id="showHideCancelAddConcept" style="display: block">
-                    <input type="button" name="cancelAddConcepts" id="cancelAddConceptsId" value="Cancel" onclick="javascript:validateForm(this);"/>
+                    <input type="button" name="cancelAddConcept" id="cancelAddConceptId" value="Cancel" onclick="javascript:validateForm(this);"/>
                 </p>
-            </div>
+
         </div>
 
 
@@ -229,7 +231,6 @@ ${ui.message("conceptmanagementapps.managesnomedct.instructions")}
          document.getElementById('showHideCancelAddConcept').style.display = "block";
          document.getElementById('processStatus').style.display = "block";
          document.getElementById('saveConfigurationId').disabled = true;
-         document.getElementById('saveConfigurationId').disabled = true;
          setTimeout(function(){reloadPage()}, 10000);
      }
 
@@ -292,7 +293,15 @@ function validateForm(inputType) {
 
     directoryLocationErrText.style.display = "none";
 
-    if(inputType.id === "addSnomedCTConceptId" && (!document.getElementById("conceptCode").value || !+document.getElementById("concept-class-list-field").value) ) {
+    if(inputType.id === "addSnomedCTConceptId" && (!document.getElementById("snomedConceptsFileLocationId").value)) {
+        if ((!document.getElementById("conceptCode").value || !+document.getElementById("concept-class-list-field").value)) {
+            error = 1;
+        }
+    }
+
+
+
+    if(inputType.id === "addSnomedCTConceptsId" && (!document.getElementById("snomedConceptsFileLocationId").value)) {
         error=1;
     }
 

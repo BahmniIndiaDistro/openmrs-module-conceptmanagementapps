@@ -38,6 +38,7 @@ public class ManageSnomedCTPageController {
                        @RequestParam (value = "conceptCode", required = false) String conceptCode,
                        @RequestParam (value = "attributeCode", required = false) String attributeCode,
                        @RequestParam (value = "conceptClass", required = false) String[] conceptClassIds,
+                       @RequestParam (value = "snomedConceptsFilePath", required = false) String snomedConceptFilePath ,
                        UiUtils ui, PageRequest pageRequest, HttpServletRequest request, PageModel model) {
 		
 		ConceptService conceptService = Context.getConceptService();
@@ -62,7 +63,7 @@ public class ManageSnomedCTPageController {
 			
 			try {
 				conceptManagementAppsService
-				        .startManageSnomedCTProcess(inputType, snomedFileDirectoryLocation, snomedSource, conceptCode, conceptClassId);
+				        .startManageSnomedCTProcess(inputType, snomedFileDirectoryLocation, snomedSource, conceptCode, conceptClassId, snomedConceptFilePath);
 				setValuesForNoProcessRunning(model, conceptManagementAppsService, snomedFileDirectoryLocation);
 			}
 			catch (FileNotFoundException e) {
@@ -79,7 +80,7 @@ public class ManageSnomedCTPageController {
 			try {
 				
 				conceptManagementAppsService
-				        .startManageSnomedCTProcess(inputType, snomedFileDirectoryLocation, snomedSource, conceptCode, conceptClassId);
+				        .startManageSnomedCTProcess(inputType, snomedFileDirectoryLocation, snomedSource, conceptCode, conceptClassId,  snomedConceptFilePath);
 			}
 			catch (FileNotFoundException e) {
 				manageSnomedCTError = "Files not found. Please check your file path.";

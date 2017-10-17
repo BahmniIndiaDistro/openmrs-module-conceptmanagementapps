@@ -48,8 +48,10 @@ import org.openmrs.module.conceptmanagementapps.api.ManageSnomedCTProcess;
 import org.openmrs.util.OpenmrsUtil;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +70,7 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
 
     @Override
     @Transactional
-    public void startManageSnomedCTProcess(String process, String snomedFileDirectory, ConceptSource snomedSource, String conceptCode, int conceptClassId) throws APIException, FileNotFoundException {
+    public void startManageSnomedCTProcess(String process, String snomedFileDirectory, ConceptSource snomedSource, String conceptCode, int conceptClassId, String snomedConceptsFilePath) throws APIException, FileNotFoundException {
         try {
             initLogging();
             snomedIndexFileDirectoryLocation = OpenmrsUtil.getApplicationDataDirectory() + "/tempLucene";
@@ -76,7 +78,7 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
             currentSnomedCTProcess.setCurrentManageSnomedCTProcessDirectoryLocation(snomedFileDirectory);
             snomedSource = Context.getConceptService().getConceptSourceByName("SNOMED CT");
             indexSnomedFiles(snomedFileDirectory);
-            importContent(process, snomedFileDirectory, snomedSource, conceptCode, conceptClassId);
+            importContent(process, snomedFileDirectory, snomedSource, conceptCode, conceptClassId, snomedConceptsFilePath);
             Logger.getLogger(BahmniConceptManagementAppsServiceImpl.class).getLoggerRepository().resetConfiguration();
         } finally {
             try {
@@ -88,9 +90,47 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
 
     }
 
-    private void importContent(String process, String snomedFileDirectory, ConceptSource snomedSource, String conceptCode, int conceptClassId) {
+    private void indexRefsetFile(String snomedConceptsFilePath)  {
+        if (!getManageSnomedCTProcessCancelled()) {
+            BufferedReader bfr = null;
+            try {
+                File file = new File(snomedConceptsFilePath);
+                bfr = new BufferedReader(new FileReader(file));
+
+                for (String line = bfr.readLine(); line != null; line = bfr.readLine()) {
+                    String[] fileFields = line.split("\t");
+                    ConceptClass conceptClass = Context.getConceptService().getConceptClassByName(fileFields[1]);
+                    if(conceptClass == null) {
+                        logger.info("Cannot create concept, concept class is invalid" + fileFields[1]);
+                    } else {
+                        importSnomedCTConcepts(fileFields[0], false, conceptClass.getId());
+                    }
+                }
+            } catch (FileNotFoundException e) {
+                log.error("Error Indexing Snomed Files: File Not Found", e);
+            } catch (Exception e) {
+                log.error("Error Indexing Snomed Files ", e);
+            } finally {
+                try {
+                    if (bfr != null) {
+                        bfr.close();
+                    }
+                } catch (IOException e) {
+                    log.error("Error Indexing Snomed Files: trying to close buffered reader ", e);
+                }
+            }
+        }
+    }
+
+
+    private void importContent(String process, String snomedFileDirectory, ConceptSource snomedSource, String conceptCode, int conceptClassId, String snomedConceptsFilePath) {
         if (process.contains("addSnomedCTConcepts")) {
-            importSnomedCTConcepts(conceptCode, false, conceptClassId);
+            if(snomedConceptsFilePath != null) {
+                indexRefsetFile(snomedConceptsFilePath);
+            }
+            else {
+                importSnomedCTConcepts(conceptCode, false, conceptClassId);
+            }
         } else if (process.contains("addSnomedCTAttributes")) {
             importSnomedCTConcepts(conceptCode, true, conceptClassId);
         } else if (process.contains("addSnomedCTRelationships")) {
@@ -335,7 +375,7 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
 
     private static void initLogging() {
         try {
-            RollingFileAppender appender = new RollingFileAppender(new SimpleLayout(),"/var/log/openmrs/snomedConcepts.log",true);
+            RollingFileAppender appender = new RollingFileAppender(new SimpleLayout(), "/var/log/openmrs/snomedConcepts.log", true);
             appender.setMaxFileSize("20MB");
             logger.addAppender(appender);
 
