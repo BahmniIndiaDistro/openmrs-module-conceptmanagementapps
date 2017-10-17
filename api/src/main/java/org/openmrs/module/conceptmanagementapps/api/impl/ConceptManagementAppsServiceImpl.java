@@ -59,6 +59,7 @@ import org.openmrs.ConceptReferenceTerm;
 import org.openmrs.ConceptReferenceTermMap;
 import org.openmrs.ConceptSource;
 import org.openmrs.api.APIException;
+import org.openmrs.api.AdministrationService;
 import org.openmrs.api.ConceptService;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.DAOException;
@@ -415,7 +416,7 @@ public class ConceptManagementAppsServiceImpl extends BaseOpenmrsService impleme
 	}
 
     @Override
-    public void startManageSnomedCTProcess(String process, String dirPath, ConceptSource snomedSource, String conceptCode, int conceptClassId) throws APIException, FileNotFoundException {
+    public void startManageSnomedCTProcess(String process, String dirPath, ConceptSource snomedSource, String conceptCode, int conceptClassId, String snomedConceptFilePath) throws APIException, FileNotFoundException {
             startManageSnomedCTProcess(process, dirPath, snomedSource);
     }
 
@@ -434,13 +435,12 @@ public class ConceptManagementAppsServiceImpl extends BaseOpenmrsService impleme
 			currentSnomedCTProcess = new ManageSnomedCTProcess(process);
 			currentSnomedCTProcess.setCurrentManageSnomedCTProcessDirectoryLocation(snomedFileDirectory);
 
-			ConceptManagementAppsProperties cmap = new ConceptManagementAppsProperties();
 			String snomedSourceUuid;
 			if (snomedSource != null) {
 				snomedSourceUuid = snomedSource.getUuid();
 			} else {
-				snomedSourceUuid = cmap
-				        .getSnomedCTConceptSourceUuidGlobalProperty(ConceptManagementAppsConstants.SNOMED_CT_CONCEPT_SOURCE_UUID_GP);
+                AdministrationService as = Context.getAdministrationService();
+                snomedSourceUuid = as.getGlobalProperty(ConceptManagementAppsConstants.SNOMED_CT_CONCEPT_SOURCE_UUID_GP);
 			}
 
 			indexSnomedFiles(snomedFileDirectory);

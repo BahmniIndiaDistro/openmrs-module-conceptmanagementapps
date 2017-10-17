@@ -88,7 +88,7 @@ public interface ConceptManagementAppsService extends OpenmrsService {
 
 
     @Transactional
-    public void startManageSnomedCTProcess(String process, String dirPath, ConceptSource snomedSource, String conceptCode, int conceptClassId) throws APIException,
+    public void startManageSnomedCTProcess(String process, String dirPath, ConceptSource snomedSource, String conceptCode, int conceptClassId, String snomedConceptFilePath) throws APIException,
             FileNotFoundException;
 
 	/**
