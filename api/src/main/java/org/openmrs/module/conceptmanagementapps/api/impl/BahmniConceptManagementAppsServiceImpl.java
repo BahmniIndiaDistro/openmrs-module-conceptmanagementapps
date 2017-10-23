@@ -125,7 +125,7 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
 
     private void importContent(String process, String snomedFileDirectory, ConceptSource snomedSource, String conceptCode, int conceptClassId, String snomedConceptsFilePath) {
         if (process.contains("addSnomedCTConcepts")) {
-            if(snomedConceptsFilePath != null) {
+            if(StringUtils.isNotBlank(snomedConceptsFilePath)) {
                 indexRefsetFile(snomedConceptsFilePath);
             }
             else {
