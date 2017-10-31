@@ -275,7 +275,7 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
                             if (descriptionType.equals(FULLY_SPECIFIED_TYPE)) {
                                 fullySpecifiedName = name;
                             } else if (descriptionType.equals(SYNONYM_TYPE)) {
-                                if (!synonyms.contains(name)) {
+                                if (synonyms.stream().noneMatch(name::equalsIgnoreCase)) {
                                     /* The if block is to remove duplicate synonyms.
                                        For a few snomed codes(e.g. 39925003) there are duplicate synonyms &
                                        openmrs throws an error while saving the concept.
@@ -328,6 +328,7 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
     }
 
     private Concept createConcept(String conceptCode, ConceptSource conceptSource, ConceptMapType conceptMapType, int conceptClassId, String fullySpecifiedName, List<String> synonyms) {
+        ConceptService conceptService = Context.getConceptService();
         Concept concept = new Concept();
         ConceptName conceptName = new ConceptName();
 
@@ -344,12 +345,10 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
         shortName.setConceptNameType(ConceptNameType.SHORT);
         concept.setShortName(shortName);
 
-        ConceptDatatype conceptDatatype = new ConceptDatatype();
-        conceptDatatype.setConceptDatatypeId(4);
+        ConceptDatatype conceptDatatype = conceptService.getConceptDatatype(4);
         concept.setDatatype(conceptDatatype);
 
-        ConceptClass conceptClass = new ConceptClass();
-        conceptClass.setConceptClassId(conceptClassId);
+        ConceptClass conceptClass = conceptService.getConceptClass(conceptClassId);
         concept.setConceptClass(conceptClass);
 
         ConceptReferenceTerm conceptReferenceTerm = saveConceptReferenceTerm(conceptCode, conceptSource, fullySpecifiedName);
@@ -366,7 +365,7 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
             }
         }
 
-        Context.getConceptService().saveConcept(concept);
+        conceptService.saveConcept(concept);
         return concept;
     }
 
