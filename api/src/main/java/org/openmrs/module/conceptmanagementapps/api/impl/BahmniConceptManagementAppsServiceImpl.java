@@ -182,10 +182,13 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
                 ConceptReferenceTerm conceptReferenceTermB = cs.getConceptReferenceTermByCode(currentDoc.get(PARENT_TERM), snomedSource);
 
                 if (conceptReferenceTermB != null) {
-                    ConceptReferenceTerm relationshipTerm = cs.getConceptReferenceTermByCode(currentDoc.get(RELATIONSHIP_ID), snomedSource);
+                    String code = currentDoc.get(RELATIONSHIP_ID);
+                    ConceptReferenceTerm relationshipTerm = cs.getConceptReferenceTermByCode(code, snomedSource);
                     ConceptMapType conceptMapType = relationshipTerm == null ? null : cs.getConceptMapTypeByName(relationshipTerm.getName());
                     if (conceptMapType != null) {
                         saveReferenceTermMap(conceptReferenceTerm, conceptReferenceTermB, conceptMapType);
+                    }else {
+                        logger.error(String.format("Cannot find a map type for relationship id %s", code));
                     }
                 }
             }
@@ -215,9 +218,7 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
         try {
             IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(snomedIndexFileDirectoryLocation)));
             IndexSearcher searcher = new IndexSearcher(reader);
-            ArrayList<String> parentConcepts = new ArrayList<String>();
             saveSnomedCTConcept(conceptCode, null, searcher, false, isAttribute, conceptClassId);
-            saveChildConcepts(conceptCode, searcher, parentConcepts, isAttribute, conceptClassId);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -329,13 +330,24 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
     private Concept createConcept(String conceptCode, ConceptSource conceptSource, ConceptMapType conceptMapType, int conceptClassId, String fullySpecifiedName, List<String> synonyms) {
         Concept concept = new Concept();
         ConceptName conceptName = new ConceptName();
+
         conceptName.setName(fullySpecifiedName);
         conceptName.setLocale(Locale.ENGLISH);
         conceptName.setConceptNameType(ConceptNameType.FULLY_SPECIFIED);
         concept.setFullySpecifiedName(conceptName);
+
+        int semanticTagStart = StringUtils.lastIndexOf(fullySpecifiedName, "(");
+        String nameWithoutSemanticTag = StringUtils.substring(fullySpecifiedName, 0, semanticTagStart);
+        ConceptName shortName = new ConceptName();
+        shortName.setName(StringUtils.trim(nameWithoutSemanticTag));
+        shortName.setLocale(Locale.ENGLISH);
+        shortName.setConceptNameType(ConceptNameType.SHORT);
+        concept.setShortName(shortName);
+
         ConceptDatatype conceptDatatype = new ConceptDatatype();
         conceptDatatype.setConceptDatatypeId(4);
         concept.setDatatype(conceptDatatype);
+
         ConceptClass conceptClass = new ConceptClass();
         conceptClass.setConceptClassId(conceptClassId);
         concept.setConceptClass(conceptClass);
@@ -349,11 +361,6 @@ public class BahmniConceptManagementAppsServiceImpl extends ConceptManagementApp
         concept.addConceptMapping(conceptMap);
 
         if (CollectionUtils.isNotEmpty(synonyms)) {
-            ConceptName shortName = new ConceptName();
-            shortName.setName(synonyms.get(0));
-            shortName.setLocale(Locale.ENGLISH);
-            shortName.setConceptNameType(ConceptNameType.SHORT);
-            concept.setShortName(shortName);
             for (String synonym : synonyms) {
                 concept.addName(new ConceptName(synonym, Locale.ENGLISH));
             }
